@@ -1,0 +1,90 @@
+ScreenManager:
+    LoginScreen:
+    MainScreen:
+
+<LoginScreen>:
+    name: "login"
+    MDFloatLayout:
+        MDLabel:
+            text: "Login"
+            halign: "center"
+            pos_hint: {"center_y": 0.85}
+            font_style: "H4"
+
+        MDTextField:
+            id: username
+            hint_text: "Username"
+            pos_hint: {"center_x": 0.5, "center_y": 0.65}
+            size_hint_x: 0.8
+
+        MDTextField:
+            id: password
+            hint_text: "Password"
+            password: True
+            pos_hint: {"center_x": 0.5, "center_y": 0.55}
+            size_hint_x: 0.8
+
+        MDRaisedButton:
+            text: "Login"
+            pos_hint: {"center_x": 0.5, "center_y": 0.45}
+            on_press: root.login()
+
+        MDLabel:
+            id: login_message
+            text: ""
+            halign: "center"
+            pos_hint: {"center_y": 0.35}
+            theme_text_color: "Error"
+
+<MainScreen>:
+    name: "main"
+    MDBottomNavigation:
+
+        MDBottomNavigationItem:
+            name: 'inventory'
+            text: 'Inventory'
+            icon: 'package-variant'
+
+            BoxLayout:
+                orientation: 'vertical'
+                padding: 10
+                spacing: 10
+
+                MDLabel:
+                    text: "Product List"
+                    halign: "center"
+                    font_style: "H6"
+                    size_hint_y: None
+                    height: self.texture_size[1] + 10
+
+                ScrollView:
+                    MDList:
+                        id: inventory_list
+
+        MDBottomNavigationItem:
+            name: 'transactions'
+            text: 'Transactions'
+            icon: 'cash-multiple'
+
+            MDBoxLayout:
+                orientation: 'vertical'
+                padding: 20
+                spacing: 20
+
+                MDLabel:
+                    text: 'Transaction form (TODO)'
+                    halign: 'center'
+
+        MDBottomNavigationItem:
+            name: 'employees'
+            text: 'Employees'
+            icon: 'account-group-outline'
+
+            MDBoxLayout:
+                orientation: 'vertical'
+                padding: 20
+                spacing: 20
+
+                MDLabel:
+                    text: 'Employee list (TODO)'
+                    halign: 'center'
