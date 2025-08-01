@@ -1,3 +1,5 @@
+# app.kv (fixed and compatible with main.py)
+
 ScreenManager:
     LoginScreen:
     MainScreen:
@@ -38,6 +40,7 @@ ScreenManager:
 
 <MainScreen>:
     name: "main"
+
     MDBottomNavigation:
 
         MDBottomNavigationItem:
@@ -47,19 +50,62 @@ ScreenManager:
 
             BoxLayout:
                 orientation: 'vertical'
-                padding: 10
-                spacing: 10
+                padding: dp(10)
+                spacing: dp(10)
 
                 MDLabel:
-                    text: "Product List"
+                    text: "Product Inventory"
                     halign: "center"
                     font_style: "H6"
                     size_hint_y: None
-                    height: self.texture_size[1] + 10
+                    height: dp(40)
 
                 ScrollView:
                     MDList:
                         id: inventory_list
+
+        MDBottomNavigationItem:
+            name: 'manage'
+            text: 'Manage Products'
+            icon: 'plus-box-outline'
+
+            MDBoxLayout:
+                orientation: 'vertical'
+                padding: dp(20)
+                spacing: dp(10)
+
+                MDTextField:
+                    id: name_field
+                    hint_text: "Product Name"
+
+                MDTextField:
+                    id: qty_field
+                    hint_text: "Quantity"
+                    input_filter: "int"
+
+                MDTextField:
+                    id: price_field
+                    hint_text: "Price"
+                    input_filter: "float"
+
+                MDTextField:
+                    id: exp_field
+                    hint_text: "Expiration Date (YYYY-MM-DD)"
+
+                MDRaisedButton:
+                    text: "Add Product"
+                    on_release: app.submit_product()
+
+                MDSeparator:
+                    height: dp(20)
+
+                MDTextField:
+                    id: delete_field
+                    hint_text: "Enter product name to delete"
+
+                MDRaisedButton:
+                    text: "Delete Product"
+                    on_release: app.delete_product_from_manage()
 
         MDBottomNavigationItem:
             name: 'transactions'
@@ -68,12 +114,28 @@ ScreenManager:
 
             MDBoxLayout:
                 orientation: 'vertical'
-                padding: 20
-                spacing: 20
+                padding: dp(20)
+                spacing: dp(20)
 
                 MDLabel:
-                    text: 'Transaction form (TODO)'
-                    halign: 'center'
+                    text: "Transactions (Coming Soon)"
+                    halign: "center"
+                    font_style: "H6"
+
+        MDBottomNavigationItem:
+            name: 'history'
+            text: 'History'
+            icon: 'history'
+
+            MDBoxLayout:
+                orientation: 'vertical'
+                padding: dp(20)
+                spacing: dp(20)
+
+                MDLabel:
+                    text: "Transaction Logs (Coming Soon)"
+                    halign: "center"
+                    font_style: "H6"
 
         MDBottomNavigationItem:
             name: 'employees'
@@ -82,9 +144,10 @@ ScreenManager:
 
             MDBoxLayout:
                 orientation: 'vertical'
-                padding: 20
-                spacing: 20
+                padding: dp(20)
+                spacing: dp(20)
 
                 MDLabel:
-                    text: 'Employee list (TODO)'
-                    halign: 'center'
+                    text: "Employee Section (Coming Soon)"
+                    halign: "center"
+                    font_style: "H6"
