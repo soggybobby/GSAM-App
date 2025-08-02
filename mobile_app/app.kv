@@ -1,8 +1,8 @@
-# app.kv (fixed and compatible with main.py)
-
 ScreenManager:
     LoginScreen:
     MainScreen:
+    AddProductScreen:
+    DeleteProductScreen:
 
 <LoginScreen>:
     name: "login"
@@ -67,45 +67,35 @@ ScreenManager:
         MDBottomNavigationItem:
             name: 'manage'
             text: 'Manage Products'
-            icon: 'plus-box-outline'
+            icon: 'cog-outline'
 
-            MDBoxLayout:
+            BoxLayout:
                 orientation: 'vertical'
+                spacing: dp(15)
                 padding: dp(20)
-                spacing: dp(10)
 
-                MDTextField:
-                    id: name_field
-                    hint_text: "Product Name"
+                Widget:
 
-                MDTextField:
-                    id: qty_field
-                    hint_text: "Quantity"
-                    input_filter: "int"
-
-                MDTextField:
-                    id: price_field
-                    hint_text: "Price"
-                    input_filter: "float"
-
-                MDTextField:
-                    id: exp_field
-                    hint_text: "Expiration Date (YYYY-MM-DD)"
+                MDLabel:
+                    text: "Select Product Action"
+                    halign: "center"
+                    font_style: "H6"
+                    size_hint_y: None
+                    height: dp(40)
 
                 MDRaisedButton:
                     text: "Add Product"
-                    on_release: app.submit_product()
-
-                MDSeparator:
-                    height: dp(20)
-
-                MDTextField:
-                    id: delete_field
-                    hint_text: "Enter product name to delete"
+                    icon: "plus-box"
+                    pos_hint: {"center_x": 0.5}
+                    on_release: app.root.current = 'add_product'
 
                 MDRaisedButton:
                     text: "Delete Product"
-                    on_release: app.delete_product_from_manage()
+                    icon: "delete"
+                    pos_hint: {"center_x": 0.5}
+                    on_release: app.root.current = 'delete_product'
+
+                Widget:
 
         MDBottomNavigationItem:
             name: 'transactions'
@@ -151,3 +141,91 @@ ScreenManager:
                     text: "Employee Section (Coming Soon)"
                     halign: "center"
                     font_style: "H6"
+
+<AddProductScreen>:
+    name: "add_product"
+    MDBoxLayout:
+        orientation: 'vertical'
+        padding: dp(20)
+        spacing: dp(10)
+
+        MDTopAppBar:
+            title: "Add Product"
+            left_action_items: [["arrow-left", lambda x: setattr(app.root, "current", "main")]]
+
+        Widget:
+
+        MDTextField:
+            id: name_field
+            hint_text: "Product Name"
+        MDLabel:
+            id: name_warn
+            text: ""
+            theme_text_color: "Error"
+            font_style: "Caption"
+
+        MDTextField:
+            id: qty_field
+            hint_text: "Quantity"
+            input_filter: "int"
+        MDLabel:
+            id: qty_warn
+            text: ""
+            theme_text_color: "Error"
+            font_style: "Caption"
+
+        MDTextField:
+            id: price_field
+            hint_text: "Price"
+            input_filter: "float"
+        MDLabel:
+            id: price_warn
+            text: ""
+            theme_text_color: "Error"
+            font_style: "Caption"
+
+        MDTextField:
+            id: exp_field
+            hint_text: "Expiration Date (YYYY-MM-DD)"
+        MDLabel:
+            id: exp_warn
+            text: ""
+            theme_text_color: "Error"
+            font_style: "Caption"
+
+        MDRaisedButton:
+            text: "Submit"
+            pos_hint: {"center_x": 0.5}
+            on_release: app.submit_product()
+
+        Widget:
+
+<DeleteProductScreen>:
+    name: "delete_product"
+    MDBoxLayout:
+        orientation: 'vertical'
+        padding: dp(20)
+        spacing: dp(10)
+
+        MDTopAppBar:
+            title: "Delete Product"
+            left_action_items: [["arrow-left", lambda x: setattr(app.root, "current", "main")]]
+
+        Widget:
+
+        MDTextField:
+            id: delete_field
+            hint_text: "Enter product name to delete"
+
+        MDLabel:
+            id: delete_warn
+            text: ""
+            theme_text_color: "Error"
+            font_style: "Caption"
+
+        MDRaisedButton:
+            text: "Delete"
+            pos_hint: {"center_x": 0.5}
+            on_release: app.delete_product_from_manage()
+
+        Widget:

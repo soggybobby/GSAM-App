@@ -1,4 +1,4 @@
-# main.py (MDSnackbar usage fixed)
+# main.py (updated with separate Add/Delete product screens and dropdown navigation)
 import sys
 import traceback
 import requests
@@ -6,10 +6,11 @@ from kivy.lang import Builder
 from kivy.metrics import dp
 from kivymd.app import MDApp
 from kivymd.uix.screen import MDScreen
-from kivymd.uix.button import MDRaisedButton
+from kivymd.uix.button import MDRaisedButton, MDIconButton
 from kivymd.uix.list import OneLineAvatarIconListItem
-from kivymd.uix.snackbar import MDSnackbar
+from kivymd.uix.dialog import MDDialog
 from kivymd.uix.label import MDLabel
+from kivy.uix.screenmanager import ScreenManager, Screen
 
 API_BASE_URL = "http://127.0.0.1:5000"
 
@@ -49,35 +50,34 @@ class MainScreen(MDScreen):
         except Exception as e:
             print("Inventory load error:", e)
 
-class InventoryApp(MDApp):
-    def build(self):
-        self.theme_cls.primary_palette = "Pink"
-        self.theme_cls.theme_style = "Light"
-        self.user_id = None
-        self.role = None
-        return Builder.load_file("app.kv")
+class AddProductScreen(MDScreen):
+    def add_product(self):
+        name = self.ids.name_field.text
+        quantity = self.ids.qty_field.text
+        price = self.ids.price_field.text
+        expiration = self.ids.exp_field.text
 
-    def show_snackbar(self, message):
-        snackbar = MDSnackbar()
-        snackbar.add_widget(
-            MDLabel(
-                text=message,
-                halign="center",
-                theme_text_color="Custom",
-                text_color=(1, 1, 1, 1),
-            )
-        )
-        snackbar.open()
+        # Reset warnings
+        self.ids.name_warn.text = ""
+        self.ids.qty_warn.text = ""
+        self.ids.price_warn.text = ""
+        self.ids.exp_warn.text = ""
 
-    def submit_product(self):
-        screen = self.root.get_screen("main")
-        name = screen.ids.name_field.text
-        quantity = screen.ids.qty_field.text
-        price = screen.ids.price_field.text
-        expiration = screen.ids.exp_field.text
+        error = False
+        if not name:
+            self.ids.name_warn.text = "Required"
+            error = True
+        if not quantity:
+            self.ids.qty_warn.text = "Required"
+            error = True
+        if not price:
+            self.ids.price_warn.text = "Required"
+            error = True
+        if not expiration:
+            self.ids.exp_warn.text = "Required"
+            error = True
 
-        if not all([name, quantity, price, expiration]):
-            self.show_snackbar("All fields are required.")
+        if error:
             return
 
         try:
@@ -88,24 +88,26 @@ class InventoryApp(MDApp):
                 "expiration_date": expiration
             })
             if res.status_code == 200:
-                self.show_snackbar("Product added!")
-                self.root.get_screen("main").load_inventory()
-                screen.ids.name_field.text = ""
-                screen.ids.qty_field.text = ""
-                screen.ids.price_field.text = ""
-                screen.ids.exp_field.text = ""
+                self.dialog_popup("Product added!")
+                self.manager.get_screen("main").load_inventory()
+                self.ids.name_field.text = ""
+                self.ids.qty_field.text = ""
+                self.ids.price_field.text = ""
+                self.ids.exp_field.text = ""
             else:
-                self.show_snackbar("Failed to add product.")
+                self.dialog_popup("Failed to add product")
         except Exception as e:
-            print("Add error:", e)
-            self.show_snackbar("Error during product addition")
+            print("Add product error:", e)
+            self.dialog_popup("Error adding product")
 
-    def delete_product_from_manage(self):
-        screen = self.root.get_screen("main")
-        name = screen.ids.delete_field.text
+    def dialog_popup(self, text):
+        MDDialog(title="Info", text=text).open()
 
+class DeleteProductScreen(MDScreen):
+    def delete_product(self):
+        name = self.ids.delete_field.text
         if not name:
-            self.show_snackbar("Enter a product name to delete.")
+            self.dialog_popup("Enter a product name to delete.")
             return
 
         try:
@@ -114,16 +116,134 @@ class InventoryApp(MDApp):
                 product_id = res.json()["id"]
                 del_res = requests.post(f"{API_BASE_URL}/delete_product", json={"product_id": product_id})
                 if del_res.status_code == 200:
-                    self.show_snackbar("Product deleted")
-                    screen.ids.delete_field.text = ""
-                    self.root.get_screen("main").load_inventory()
+                    self.dialog_popup("Product deleted")
+                    self.ids.delete_field.text = ""
+                    self.manager.get_screen("main").load_inventory()
                 else:
-                    self.show_snackbar("Delete failed")
+                    self.dialog_popup("Delete failed")
             else:
-                self.show_snackbar("Product not found")
+                self.dialog_popup("Product not found")
         except Exception as e:
             print("Delete product error:", e)
-            self.show_snackbar("Error deleting product")
+            self.dialog_popup("Error deleting product")
+
+    def dialog_popup(self, text):
+        MDDialog(title="Info", text=text).open()
+
+class InventoryApp(MDApp):
+    def build(self):
+        self.theme_cls.primary_palette = "Pink"
+        self.theme_cls.theme_style = "Light"
+        self.user_id = None
+        self.role = None
+        return Builder.load_file("app.kv")
+
+    def submit_product(self):
+        screen = self.root.get_screen("add_product")
+        name = screen.ids.name_field.text
+        quantity = screen.ids.qty_field.text
+        price = screen.ids.price_field.text
+        expiration = screen.ids.exp_field.text
+
+        # Reset previous warnings
+        screen.ids.name_warn.text = ""
+        screen.ids.qty_warn.text = ""
+        screen.ids.price_warn.text = ""
+        screen.ids.exp_warn.text = ""
+
+        error = False
+        if not name:
+            screen.ids.name_warn.text = "Product name is required"
+            error = True
+        if not quantity:
+            screen.ids.qty_warn.text = "Quantity is required"
+            error = True
+        if not price:
+            screen.ids.price_warn.text = "Price is required"
+            error = True
+        if not expiration:
+            screen.ids.exp_warn.text = "Expiration date is required"
+            error = True
+
+        if error:
+            return
+
+        try:
+            res = requests.post("http://127.0.0.1:5000/add_product", json={
+                "name": name,
+                "quantity": int(quantity),
+                "price": float(price),
+                "expiration_date": expiration
+            })
+            if res.status_code == 200:
+                self.root.get_screen("main").load_inventory()
+                screen.ids.name_field.text = ""
+                screen.ids.qty_field.text = ""
+                screen.ids.price_field.text = ""
+                screen.ids.exp_field.text = ""
+                self.show_popup("Success", "Product added.")
+            else:
+                self.show_popup("Failed", "Could not add product.")
+        except Exception as e:
+            print("Error:", e)
+            self.show_popup("Error", "Server error.")
+
+    def show_popup(self, title, text):
+        from kivymd.uix.dialog import MDDialog
+        from kivymd.uix.button import MDFlatButton
+
+        dialog = MDDialog(
+            title=title,
+            text=text,
+            buttons=[
+                MDFlatButton(
+                    text="OK", on_release=lambda x: dialog.dismiss()
+                ),
+            ],
+        )
+        dialog.open()
+
+    def delete_product_from_manage(self):
+        screen = self.root.get_screen("delete_product")
+        name = screen.ids.delete_field.text
+
+        # Clear previous warning
+        screen.ids.delete_warn.text = ""
+
+        if not name:
+            screen.ids.delete_warn.text = "Product name is required."
+            return
+
+        try:
+            res = requests.post(f"{API_BASE_URL}/get_product_by_name", json={"name": name})
+            if res.status_code == 200:
+                product_id = res.json()["id"]
+                del_res = requests.post(f"{API_BASE_URL}/delete_product", json={"product_id": product_id})
+                if del_res.status_code == 200:
+                    screen.ids.delete_field.text = ""
+                    screen.ids.delete_warn.text = "Product deleted successfully."
+                    self.root.get_screen("main").load_inventory()
+                else:
+                    screen.ids.delete_warn.text = "Failed to delete product."
+            else:
+                screen.ids.delete_warn.text = "Product not found."
+        except Exception as e:
+            print("Delete product error:", e)
+            screen.ids.delete_warn.text = "Error occurred during deletion."
+
+
+    def show_dialog(self, message):
+        from kivymd.uix.dialog import MDDialog
+        from kivymd.uix.label import MDLabel
+
+        dialog = MDDialog(
+            title="Notice",
+            type="custom",
+            content_cls=MDLabel(text=message, halign="center"),
+        )
+        dialog.open()
+
+
 
 if __name__ == '__main__':
     try:
