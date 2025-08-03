@@ -135,6 +135,21 @@ def transaction_logs():
     conn.close()
     return jsonify(logs)
 
+@app.route('/search_products', methods=['POST'])
+def search_products():
+    data = request.get_json()
+    query = data.get("query", "")
+
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT name FROM products WHERE name LIKE %s LIMIT 10", (f"%{query}%",))
+    results = cursor.fetchall()
+    conn.close()
+
+    # Flatten list of tuples to list of names
+    return jsonify([row[0] for row in results])
+
+
 # --- Run the Server ---
 if __name__ == "__main__":
     app.run(debug=True)

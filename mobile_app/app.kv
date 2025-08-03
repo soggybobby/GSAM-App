@@ -108,9 +108,53 @@ ScreenManager:
                 spacing: dp(20)
 
                 MDLabel:
-                    text: "Transactions (Coming Soon)"
+                    text: "Record a Transaction"
                     halign: "center"
                     font_style: "H6"
+                    size_hint_y: None
+                    height: dp(40)
+
+                MDSpinner:
+                    id: transaction_spinner
+                    active: True
+                    size_hint: None, None
+                    size: dp(40), dp(40)
+                    pos_hint: {"center_x": 0.5}
+                    opacity: 0  # Initially hidden, only visible if loading
+
+                MDTextField:
+                    id: transaction_type_field
+                    hint_text: "Select Transaction Type"
+                    readonly: True
+                    on_focus: if self.focus: app.open_transaction_type_menu()
+                    pos_hint: {"center_x": 0.5}
+                    size_hint_x: 0.9
+
+                MDTextField:
+                    id: product_field
+                    hint_text: "Search Product"
+                    pos_hint: {"center_x": 0.5}
+                    size_hint_x: 0.9
+                    on_text: app.update_product_suggestions(self.text)
+
+                MDTextField:
+                    id: transaction_qty
+                    hint_text: "Enter Quantity"
+                    input_filter: "int"
+                    pos_hint: {"center_x": 0.5}
+                    size_hint_x: 0.9
+
+                MDLabel:
+                    id: transaction_error
+                    text: ""
+                    theme_text_color: "Error"
+                    halign: "center"
+
+                MDRaisedButton:
+                    text: "Submit Transaction"
+                    pos_hint: {"center_x": 0.5}
+                    on_release: root.submit_transaction()
+
 
         MDBottomNavigationItem:
             name: 'history'
