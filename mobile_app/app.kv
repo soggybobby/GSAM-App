@@ -151,7 +151,7 @@ ScreenManager:
 
         MDTopAppBar:
             title: "Add Product"
-            left_action_items: [["arrow-left", lambda x: setattr(app.root, "current", "main")]]
+            left_action_items: [["arrow-left", lambda x: (app.reset_add_product_screen(), setattr(app.root, "current", "main"))]]
 
         Widget:
 
@@ -209,7 +209,7 @@ ScreenManager:
 
         MDTopAppBar:
             title: "Delete Product"
-            left_action_items: [["arrow-left", lambda x: setattr(app.root, "current", "main")]]
+            left_action_items: [["arrow-left", lambda x: (app.reset_delete_product_screen(), setattr(app.root, "current", "main"))]]
 
         Widget:
 

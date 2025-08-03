@@ -231,6 +231,23 @@ class InventoryApp(MDApp):
             print("Delete product error:", e)
             screen.ids.delete_warn.text = "Error occurred during deletion."
 
+    def reset_add_product_screen(self):
+        screen = self.root.get_screen("add_product")
+        screen.ids.name_field.text = ""
+        screen.ids.qty_field.text = ""
+        screen.ids.price_field.text = ""
+        screen.ids.exp_field.text = ""
+        screen.ids.name_warn.text = ""
+        screen.ids.qty_warn.text = ""
+        screen.ids.price_warn.text = ""
+        screen.ids.exp_warn.text = ""
+
+    def reset_delete_product_screen(self):
+        screen = self.root.get_screen("delete_product")
+        screen.ids.delete_field.text = ""
+        screen.ids.delete_warn.text = ""
+
+
 
     def show_dialog(self, message):
         from kivymd.uix.dialog import MDDialog
