@@ -42,6 +42,7 @@ ScreenManager:
     name: "main"
 
     MDBottomNavigation:
+        id: bottom_nav
 
         MDBottomNavigationItem:
             name: 'inventory'
@@ -164,12 +165,34 @@ ScreenManager:
             MDBoxLayout:
                 orientation: 'vertical'
                 padding: dp(20)
-                spacing: dp(20)
+                spacing: dp(10)
 
                 MDLabel:
-                    text: "Transaction Logs (Coming Soon)"
+                    text: "Transaction Logs"
                     halign: "center"
                     font_style: "H6"
+                    size_hint_y: None
+                    height: dp(30)
+
+                MDBoxLayout:
+                    size_hint_y: None
+                    height: dp(40)
+                    spacing: dp(10)
+
+                    MDTextField:
+                        id: history_search
+                        hint_text: "Search by product"
+                        on_text: app.filter_logs()
+
+                    MDDropDownItem:
+                        id: history_filter_type
+                        text: "All"
+                        on_release: app.open_history_filter_menu()
+
+                ScrollView:
+                    MDList:
+                        id: history_list
+
 
         MDBottomNavigationItem:
             name: 'employees'

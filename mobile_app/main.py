@@ -15,6 +15,7 @@ from kivymd.uix.menu import MDDropdownMenu
 from kivymd.uix.textfield import MDTextField
 from kivymd.uix.list import OneLineListItem
 from functools import partial
+from kivymd.uix.bottomnavigation import MDBottomNavigationItem
 
 API_BASE_URL = "http://127.0.0.1:5000"
 
@@ -39,6 +40,12 @@ class LoginScreen(MDScreen):
 class MainScreen(MDScreen):
     def on_enter(self):
         self.load_inventory()
+
+    def on_enter(self):
+        self.load_inventory()
+        self.populate_transaction_products()
+        app = MDApp.get_running_app()
+        app.load_transaction_logs()
 
     def load_inventory(self):
         try:
@@ -106,14 +113,23 @@ class MainScreen(MDScreen):
             print("Transaction error:", e)
             error_label.text = "Unexpected error during transaction."
 
-
-
     def on_enter(self):
         self.load_inventory()
         self.populate_transaction_products()
+        app = MDApp.get_running_app()
+        app.load_transaction_logs() 
 
     def populate_transaction_products(self):
         pass
+
+    def on_kv_post(self, base_widget):
+        bottom_nav = self.ids['bottom_nav']  # Add an id to MDBottomNavigation in your app.kv
+        bottom_nav.bind(on_tab_switch=self.on_tab_switch)
+
+    def on_tab_switch(self, instance_navigation, instance_tab, instance_tabs, tab_text):
+        if instance_tab.name == 'history':
+            app = MDApp.get_running_app()
+            app.load_transaction_logs()
 
 class AddProductScreen(MDScreen):
     def add_product(self):
@@ -206,7 +222,9 @@ class InventoryApp(MDApp):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.product_menu = None 
+        self.product_menu = None
+        self.transaction_menu = None
+        self.all_logs = []
 
     def submit_product(self):
         screen = self.root.get_screen("add_product")
@@ -404,6 +422,62 @@ class InventoryApp(MDApp):
             content_cls=MDLabel(text=message, halign="center"),
         )
         dialog.open()
+
+    def load_transaction_logs(self):
+        try:
+            res = requests.get(f"{API_BASE_URL}/transaction_logs")
+            if res.status_code == 200:
+                self.all_logs = res.json()  # store for filtering
+                self.display_logs(self.all_logs)
+            else:
+                self.show_dialog("Failed to load logs.")
+        except Exception as e:
+            print("Error loading logs:", e)
+            self.show_dialog("Error loading transaction logs.")
+
+    def display_logs(self, logs):
+        screen = self.root.get_screen("main")
+        log_list = screen.ids.history_list
+        log_list.clear_widgets()
+
+        for log in logs:
+            log_type = "Stock In" if log["type"] == "in" else "Stock Out"
+            item_text = f"{log['product_name']} - {log_type} - Qty: {log['quantity']} - {log['timestamp']}"
+            log_list.add_widget(OneLineListItem(text=item_text))
+
+    def filter_logs(self):
+        screen = self.root.get_screen("main")
+        query = screen.ids.history_search.text.lower()
+        selected_type = screen.ids.history_filter_type.text
+
+        filtered = [
+            log for log in self.all_logs
+            if query in log["product_name"].lower() and
+            (selected_type == "All" or
+                (selected_type == "Stock In" and log["type"] == "in") or
+                (selected_type == "Stock Out" and log["type"] == "out"))
+        ]
+        self.display_logs(filtered)
+
+    def open_history_filter_menu(self):
+        menu_items = [
+            {"text": "All", "on_release": lambda x="All": self.set_history_filter(x)},
+            {"text": "Stock In", "on_release": lambda x="Stock In": self.set_history_filter(x)},
+            {"text": "Stock Out", "on_release": lambda x="Stock Out": self.set_history_filter(x)},
+        ]
+        self.history_filter_menu = MDDropdownMenu(
+            caller=self.root.get_screen("main").ids.history_filter_type,
+            items=menu_items,
+            width_mult=4,
+        )
+        self.history_filter_menu.open()
+
+    def set_history_filter(self, selected):
+        screen = self.root.get_screen("main")
+        screen.ids.history_filter_type.text = selected
+        self.history_filter_menu.dismiss()
+        self.filter_logs()
+
 
 
 
