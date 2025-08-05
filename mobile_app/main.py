@@ -64,7 +64,6 @@ class MainScreen(MDScreen):
         transaction_type = transaction_type_field.text
         quantity = qty_field.text
 
-        # Reset error message
         error_label.text = ""
 
         if not product or product == "Select Product":
@@ -77,7 +76,6 @@ class MainScreen(MDScreen):
             error_label.text = "Please enter a valid quantity."
             return
 
-        # ✅ Only try to fetch product_id if all fields are valid
         app = MDApp.get_running_app()
         product_id = app.get_product_id_by_name(product)
 
@@ -98,12 +96,16 @@ class MainScreen(MDScreen):
                 qty_field.text = ""
                 error_label.text = "Transaction submitted!"
                 error_label.theme_text_color = "Custom"
-                error_label.text_color = (0, 0.5, 0, 1)  # green
+                error_label.text_color = (0, 0.5, 0, 1)
+
+                # ✅ Refresh inventory after transaction
+                self.load_inventory()
             else:
                 error_label.text = "Failed to submit transaction."
         except Exception as e:
             print("Transaction error:", e)
             error_label.text = "Unexpected error during transaction."
+
 
 
     def on_enter(self):
