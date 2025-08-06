@@ -3,6 +3,7 @@ ScreenManager:
     MainScreen:
     AddProductScreen:
     DeleteProductScreen:
+    ChartScreen:
 
 <LoginScreen>:
     name: "login"
@@ -156,7 +157,6 @@ ScreenManager:
                     pos_hint: {"center_x": 0.5}
                     on_release: root.submit_transaction()
 
-
         MDBottomNavigationItem:
             name: 'history'
             text: 'History'
@@ -167,12 +167,19 @@ ScreenManager:
                 padding: dp(20)
                 spacing: dp(10)
 
-                MDLabel:
-                    text: "Transaction Logs"
-                    halign: "center"
-                    font_style: "H6"
+                MDBoxLayout:
                     size_hint_y: None
                     height: dp(30)
+
+                    MDLabel:
+                        text: "Transaction Logs"
+                        font_style: "H6"
+                        halign: "left"
+
+                    MDIconButton:
+                        icon: "chart-bar"
+                        pos_hint: {"center_y": 0.5}
+                        on_release: app.go_to_chart_screen()
 
                 MDBoxLayout:
                     size_hint_y: None
@@ -193,6 +200,11 @@ ScreenManager:
                     MDList:
                         id: history_list
 
+                # Chart display area (initially empty)
+                BoxLayout:
+                    id: transaction_chart_box
+                    size_hint_y: None
+                    height: dp(200)
 
         MDBottomNavigationItem:
             name: 'employees'
@@ -213,8 +225,6 @@ ScreenManager:
     name: "add_product"
     MDBoxLayout:
         orientation: 'vertical'
-        padding: dp(20)
-        spacing: dp(10)
 
         MDTopAppBar:
             title: "Add Product"
@@ -271,8 +281,6 @@ ScreenManager:
     name: "delete_product"
     MDBoxLayout:
         orientation: 'vertical'
-        padding: dp(20)
-        spacing: dp(10)
 
         MDTopAppBar:
             title: "Delete Product"
@@ -296,3 +304,42 @@ ScreenManager:
             on_release: app.delete_product_from_manage()
 
         Widget:
+
+<ChartScreen>:
+    name: "chart_screen"
+
+    BoxLayout:
+        orientation: "vertical"
+
+        MDTopAppBar:
+            title: "Sales Chart"
+            left_action_items: [["arrow-left", lambda x: app.back_to_main()]]
+
+        MDBoxLayout:
+            size_hint_y: None
+            height: dp(50)
+            spacing: dp(10)
+            padding: dp(10)
+
+            MDDropDownItem:
+                id: chart_type_dropdown
+                text: "line"
+                on_release: app.open_chart_type_menu()
+
+            MDDropDownItem:
+                id: range_dropdown
+                text: "daily"
+                on_release: app.open_range_menu()
+
+            MDDropDownItem:
+                id: product_dropdown
+                text: "All"
+                on_release: app.open_product_menu()
+
+        ScrollView:
+            BoxLayout:
+                id: chart_container
+                orientation: "vertical"
+                size_hint_y: None
+                height: self.minimum_height
+

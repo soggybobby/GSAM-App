@@ -2,6 +2,8 @@
 import sys
 import traceback
 import requests
+import io
+import matplotlib.dates as mdates
 from kivy.lang import Builder
 from kivy.metrics import dp
 from kivymd.app import MDApp
@@ -16,6 +18,13 @@ from kivymd.uix.textfield import MDTextField
 from kivymd.uix.list import OneLineListItem
 from functools import partial
 from kivymd.uix.bottomnavigation import MDBottomNavigationItem
+from matplotlib.backends.backend_agg import FigureCanvasAgg
+from kivy.uix.image import Image
+from kivy.graphics.texture import Texture
+from matplotlib.figure import Figure
+from kivy_garden.matplotlib.backend_kivyagg import FigureCanvasKivyAgg
+from collections import defaultdict
+from datetime import datetime
 
 API_BASE_URL = "http://127.0.0.1:5000"
 
@@ -210,6 +219,9 @@ class DeleteProductScreen(MDScreen):
 
     def dialog_popup(self, text):
         MDDialog(title="Info", text=text).open()
+
+class ChartScreen(MDScreen):
+    pass
 
 class InventoryApp(MDApp):
     def build(self):
@@ -478,8 +490,142 @@ class InventoryApp(MDApp):
         self.history_filter_menu.dismiss()
         self.filter_logs()
 
+    def toggle_transaction_chart(self):
+        screen = self.root.get_screen("main")
+        chart_box = screen.ids.transaction_chart_box
+        chart_box.clear_widgets()
 
+        if not hasattr(self, "chart_visible") or not self.chart_visible:
+            self.chart_visible = True
+            chart_box.add_widget(self.generate_sales_chart())
+        else:
+            self.chart_visible = False
 
+    def generate_sales_chart(self, chart_type="line", range_type="daily", product_filter="All"):
+
+        logs = self.all_logs
+        if product_filter != "All":
+            logs = [log for log in logs if log["product_name"] == product_filter]
+
+        grouped_in = defaultdict(int)
+        grouped_out = defaultdict(int)
+
+        for log in logs:
+            try:
+                dt = datetime.strptime(log["timestamp"], "%Y-%m-%d %H:%M:%S")
+                if range_type == "weekly":
+                    key = dt.strftime("%Y-W%U")
+                elif range_type == "monthly":
+                    key = dt.strftime("%Y-%m")
+                else:
+                    key = dt.strftime("%Y-%m-%d")
+
+                if log["type"] == "in":
+                    grouped_in[key] += log["quantity"]
+                elif log["type"] == "out":
+                    grouped_out[key] += log["quantity"]
+            except:
+                continue
+
+        keys = sorted(set(grouped_in.keys()) | set(grouped_out.keys()))
+        x = keys
+        y_in = [grouped_in[k] for k in x]
+        y_out = [grouped_out[k] for k in x]
+
+        # --- Chart Setup ---
+        fig = Figure(figsize=(6, 3), dpi=100)
+        ax = fig.add_subplot(111)
+
+        if chart_type == "bar":
+            ax.bar(x, y_in, label="Stock In", color="green", alpha=0.6)
+            ax.bar(x, y_out, label="Stock Out", color="red", alpha=0.6, bottom=y_in)
+        else:
+            ax.plot(x, y_in, label="Stock In", color="green", marker='o')
+            ax.plot(x, y_out, label="Stock Out", color="red", marker='x')
+
+        ax.set_title(f"{range_type.capitalize()} Transaction Summary")
+        ax.set_ylabel("Quantity")
+        ax.set_xlabel("Date")
+        ax.grid(True)
+        ax.legend()
+        fig.autofmt_xdate()
+
+        return FigureCanvasKivyAgg(fig)
+
+    def go_to_chart_screen(self):
+        self.load_transaction_logs()
+        self.root.current = "chart_screen"
+        self.update_chart_screen()
+
+    def back_to_main(self):
+        self.root.current = "main"
+
+    def open_chart_type_menu(self):
+        items = [
+            {"text": "line", "on_release": lambda x="line": self.set_chart_type(x)},
+            {"text": "bar", "on_release": lambda x="bar": self.set_chart_type(x)},
+        ]
+        self.chart_type_menu = MDDropdownMenu(
+            caller=self.root.get_screen("chart_screen").ids.chart_type_dropdown,
+            items=items, width_mult=4
+        )
+        self.chart_type_menu.open()
+
+    def set_chart_type(self, value):
+        screen = self.root.get_screen("chart_screen")
+        screen.ids.chart_type_dropdown.text = value
+        self.chart_type_menu.dismiss()
+        self.update_chart_screen()
+
+    def open_range_menu(self):
+        items = [
+            {"text": "daily", "on_release": lambda x="daily": self.set_range_type(x)},
+            {"text": "weekly", "on_release": lambda x="weekly": self.set_range_type(x)},
+            {"text": "monthly", "on_release": lambda x="monthly": self.set_range_type(x)},
+        ]
+        self.range_menu = MDDropdownMenu(
+            caller=self.root.get_screen("chart_screen").ids.range_dropdown,
+            items=items, width_mult=4
+        )
+        self.range_menu.open()
+
+    def set_range_type(self, value):
+        screen = self.root.get_screen("chart_screen")
+        screen.ids.range_dropdown.text = value
+        self.range_menu.dismiss()
+        self.update_chart_screen()
+
+    def open_product_menu(self):
+        product_names = list({log["product_name"] for log in self.all_logs})
+        product_names.sort()
+        items = [{"text": "All", "on_release": lambda x="All": self.set_product_filter(x)}]
+        for name in product_names:
+            items.append({"text": name, "on_release": lambda x=name: self.set_product_filter(x)})
+
+        self.product_menu = MDDropdownMenu(
+            caller=self.root.get_screen("chart_screen").ids.product_dropdown,
+            items=items, width_mult=4
+        )
+        self.product_menu.open()
+
+    def set_product_filter(self, value):
+        screen = self.root.get_screen("chart_screen")
+        screen.ids.product_dropdown.text = value
+        self.product_menu.dismiss()
+        self.update_chart_screen()
+
+    def update_chart_screen(self):
+        screen = self.root.get_screen("chart_screen")
+        chart_box = screen.ids.chart_container
+        chart_box.clear_widgets()
+
+        chart_type = screen.ids.chart_type_dropdown.text
+        range_type = screen.ids.range_dropdown.text
+        product_filter = screen.ids.product_dropdown.text
+
+        chart_box.add_widget(
+            self.generate_sales_chart(chart_type=chart_type, range_type=range_type, product_filter=product_filter)
+        )
 
 if __name__ == '__main__':
     try:
