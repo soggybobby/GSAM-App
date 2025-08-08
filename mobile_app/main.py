@@ -25,6 +25,7 @@ from matplotlib.figure import Figure
 from kivy_garden.matplotlib.backend_kivyagg import FigureCanvasKivyAgg
 from collections import defaultdict
 from datetime import datetime
+from email.utils import parsedate_to_datetime
 
 API_BASE_URL = "http://127.0.0.1:5000"
 
@@ -502,17 +503,21 @@ class InventoryApp(MDApp):
             self.chart_visible = False
 
     def generate_sales_chart(self, chart_type="line", range_type="daily", product_filter="All"):
-
         logs = self.all_logs
+
         if product_filter != "All":
-            logs = [log for log in logs if log["product_name"] == product_filter]
+            logs = [log for log in logs if log.get("product_name") == product_filter]
 
         grouped_in = defaultdict(int)
         grouped_out = defaultdict(int)
 
+        print(f"Logs count: {len(logs)}")
+        
         for log in logs:
+            print("Processing log:", log)
             try:
-                dt = datetime.strptime(log["timestamp"], "%Y-%m-%d %H:%M:%S")
+                dt = parsedate_to_datetime(log.get("timestamp", ""))  # Fix timestamp parsing
+
                 if range_type == "weekly":
                     key = dt.strftime("%Y-W%U")
                 elif range_type == "monthly":
@@ -520,28 +525,33 @@ class InventoryApp(MDApp):
                 else:
                     key = dt.strftime("%Y-%m-%d")
 
-                if log["type"] == "in":
-                    grouped_in[key] += log["quantity"]
-                elif log["type"] == "out":
-                    grouped_out[key] += log["quantity"]
-            except:
-                continue
+                if log.get("type") == "in":
+                    grouped_in[key] += int(log.get("quantity", 0))
+                elif log.get("type") == "out":
+                    grouped_out[key] += int(log.get("quantity", 0))
+
+            except Exception as e:
+                print(f"Error processing log: {log}")
+                print("Exception:", e)
 
         keys = sorted(set(grouped_in.keys()) | set(grouped_out.keys()))
-        x = keys
-        y_in = [grouped_in[k] for k in x]
-        y_out = [grouped_out[k] for k in x]
+        y_in = [grouped_in[k] for k in keys]
+        y_out = [grouped_out[k] for k in keys]
+
+        print("x-axis labels:", keys)
+        print("y_in:", y_in)
+        print("y_out:", y_out)
 
         # --- Chart Setup ---
         fig = Figure(figsize=(6, 3), dpi=100)
         ax = fig.add_subplot(111)
 
         if chart_type == "bar":
-            ax.bar(x, y_in, label="Stock In", color="green", alpha=0.6)
-            ax.bar(x, y_out, label="Stock Out", color="red", alpha=0.6, bottom=y_in)
+            ax.bar(keys, y_in, label="Stock In", color="green", alpha=0.6)
+            ax.bar(keys, y_out, label="Stock Out", color="red", alpha=0.6, bottom=y_in)
         else:
-            ax.plot(x, y_in, label="Stock In", color="green", marker='o')
-            ax.plot(x, y_out, label="Stock Out", color="red", marker='x')
+            ax.plot(keys, y_in, label="Stock In", color="green", marker='o')
+            ax.plot(keys, y_out, label="Stock Out", color="red", marker='x')
 
         ax.set_title(f"{range_type.capitalize()} Transaction Summary")
         ax.set_ylabel("Quantity")
@@ -551,6 +561,7 @@ class InventoryApp(MDApp):
         fig.autofmt_xdate()
 
         return FigureCanvasKivyAgg(fig)
+
 
     def go_to_chart_screen(self):
         self.load_transaction_logs()
